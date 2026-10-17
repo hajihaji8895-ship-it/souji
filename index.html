@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>掃除場所メモ（いつやったか管理）</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #cbd5e1;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 15px;
+    }
+    h1 {
+      font-size: 1.3rem;
+      text-align: center;
+      margin-bottom: 15px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border);
+    }
+    .card-title {
+      font-weight: bold;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 5px;
+    }
+    .form-group {
+      margin-bottom: 10px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+      font-family: inherit;
+    }
+    button.submit-btn {
+      width: 100%;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    button.submit-btn:hover { background-color: var(--primary-hover); }
+    
+    /* フィルター・並べ替え */
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .controls select, .controls button {
+      flex: 1;
+      min-width: 120px;
+    }
+    .sort-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .sort-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* 一覧表示 */
+    .item-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .item-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 12px;
+    }
+    .item-img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      background: #e2e8f0;
+      flex-shrink: 0;
+    }
+    .item-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .area-tag {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      width: fit-content;
+      font-weight: bold;
+    }
+    .item-name {
+      font-size: 0.95rem;
+      font-weight: bold;
+    }
+    .days-badge {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #d97706;
+    }
+    .days-badge.alert {
+      color: #dc2626;
+    }
+    .memo-info {
+      font-size: 0.8rem;
+      color: #334155;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin-top: 2px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .action-btns {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .action-btn {
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .done-btn { background: #16a34a; }
+    .done-btn:hover { background: #15803d; }
+    .del-btn { background: #ef4444; }
+    .del-btn:hover { background: #dc2626; }
+
+    /* 記事リンクのスタイル */
+    .article-links {
+      margin-top: 15px;
+    }
+    .article-links a {
+      display: block;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: bold;
+    }
+    .article-links a:hover {
+      background: #f8fafc;
+    }
+
+    /* 広告枠のスタイル */
+    .ad-container {
+      margin-top: 15px;
+      padding: 15px;
+      background: #ffffff;
+      border: 1px dashed var(--primary);
+      border-radius: 10px;
+      text-align: center;
+    }
+    .ad-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+    .ad-item {
+      margin-bottom: 12px;
+    }
+    .ad-item:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧹 掃除場所メモ</h1>
+
+  <!-- 場所追加フォーム -->
+  <div class="card">
+    <div class="card-title">＋ 新しい場所を追加</div>
+    <form id="clean-form">
+      <div class="form-group">
+        <label for="area">エリア（場所のグループ）</label>
+        <select id="area" required>
+          <option value="キッチン">キッチン</option>
+          <option value="水まわり（風呂・トイレ・洗面）">水まわり（風呂・トイレ・洗面）</option>
+          <option value="リビング・部屋">リビング・部屋</option>
+          <option value="玄関・ベランダ・屋外">玄関・ベランダ・屋外</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="placeName">場所の名前</label>
+        <input type="text" id="placeName" placeholder="例: 換気扇フィルター、エアコン" required>
+      </div>
+
+      <div class="form-group">
+        <label for="photo">場所の写真（識別用）※必須</label>
+        <input type="file" id="photo" accept="image/*" required>
+      </div>
+
+      <div class="form-group">
+        <label for="lastDate">前回掃除した日 ※過去の日付も選択可能</label>
+        <input type="date" id="lastDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="memo">メモ欄（道具・洗剤・型番など）※任意</label>
+        <textarea id="memo" placeholder="例: ウタマロ使用、フィルターサイズ25cm"></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn">保存する</button>
+    </form>
+  </div>
+
+  <!-- 管理中一覧 -->
+  <div class="card">
+    <div class="card-title">管理中の場所一覧</div>
+    
+    <div class="controls">
+      <select id="filterArea">
+        <option value="すべて">すべてのエリア</option>
+        <option value="キッチン">キッチン</option>
+        <option value="水まわり（風呂・トイレ・洗面）">水まわり</option>
+        <option value="リビング・部屋">リビング</option>
+        <option value="玄関・ベランダ・屋外">玄関・ベランダ</option>
+        <option value="その他">その他</option>
+      </select>
+      <button type="button" id="sortBtn" class="sort-btn">放置順に並べ替え</button>
+    </div>
+
+    <ul class="item-list" id="itemList"></ul>
+  </div>
+
+  <!-- 5つの解説記事リンク -->
+  <div class="card article-links">
+    <div class="card-title">お掃除ガイド・関連記事</div>
+    <a href="article1.html">📖 1. 効率よくキレイを保つ掃除の基本パターン</a>
+    <a href="article2.html">📖 2. 放置しがちな場所のチェックリストと掃除の頻度</a>
+    <a href="article3.html">📖 3. 場所別おすすめ洗剤と道具の使い分けメモ</a>
+    <a href="article4.html">📖 4. 掃除の手間を減らす予防掃除と習慣づくりのコツ</a>
+    <a href="article5.html">📖 5. 季節ごとにまとめてやりたい大掃除スケジュール</a>
+  </div>
+
+  <!-- おすすめサービス・広告枠 -->
+  <div class="card ad-container">
+    <div class="ad-title">💡 おすすめのお掃除サービス・関連ショップ</div>
+    
+    <!-- アールクリーニング 4時間パック -->
+    <div class="ad-item">
+      <a href="https://px.a8.net/svt/ejp?a8mat=4BEGD8+EO3LG2+4X26+BWVTE" rel="nofollow" target="_blank">作業実績20万件突破！☆やりたいお掃除を選べる☆激トク4時間パック</a>
+      <img border="0" width="1" height="1" src="https://www15.a8.net/0.gif?a8mat=4BEGD8+EO3LG2+4X26+BWVTE" alt="">
+    </div>
+
+    <!-- 楽天市場 -->
+    <div class="ad-item" style="margin-top: 15px;">
+      <a href="https://rpx.a8.net/svt/ejp?a8mat=4BCMO0+FUDAB6+2HOM+656YP&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26092964500_4BCMO0_FUDAB6_2HOM_656YP%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow" target="_blank">
+        <img src="http://hbb.afl.rakuten.co.jp/hsb/0ec09ba3.bc2429d5.0eb4bbaa.95151395/" border="0" alt="楽天市場">
+      </a>
+      <img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=4BCMO0+FUDAB6+2HOM+656YP" alt="">
+    </div>
+  </div>
+
+  <script>
+    let places = JSON.parse(localStorage.getItem('my_cleaning_places')) || [];
+    let isSortByDays = false;
+
+    // 日本時間で YYYY-MM-DD 形式の日付を取得する関数
+    function getTodayString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // 今日の日付を初期値にセット
+    document.getElementById('lastDate').value = getTodayString();
+
+    const form = document.getElementById('clean-form');
+    const filterAreaEl = document.getElementById('filterArea');
+    const sortBtn = document.getElementById('sortBtn');
+    const itemListEl = document.getElementById('itemList');
+
+    // 経過日数計算
+    function getDaysAgo(dateStr) {
+      if (!dateStr) return 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const past = new Date(dateStr);
+      past.setHours(0, 0, 0, 0);
+      const diff = today - past;
+      return Math.floor(diff / (1000 * 60 * 60 * 24));
+    }
+
+    // 描画関数
+    function render() {
+      itemListEl.innerHTML = '';
+      
+      let filtered = places.filter(item => {
+        if (filterAreaEl.value === 'すべて') return true;
+        return item.area === filterAreaEl.value;
+      });
+
+      if (isSortByDays) {
+        filtered.sort((a, b) => getDaysAgo(b.lastDate) - getDaysAgo(a.lastDate));
+      }
+
+      if (filtered.length === 0) {
+        itemListEl.innerHTML = '<li style="text-align:center; color:#94a3b8; padding:20px 0; font-size:0.85rem;">登録されている場所がありません</li>';
+        return;
+      }
+
+      filtered.forEach((item, index) => {
+        const days = getDaysAgo(item.lastDate);
+        const li = document.createElement('li');
+        li.className = 'item-card';
+
+        let daysText = days === 0 ? '本日掃除しました' : `${days}日放置中`;
+        let alertClass = days >= 30 ? 'alert' : '';
+
+        li.innerHTML = `
+          <img src="${item.photo}" class="item-img" alt="${escapeHtml(item.name)}">
+          <div class="item-info">
+            <div>
+              <span class="area-tag">${escapeHtml(item.area)}</span>
+            </div>
+            <div class="item-name">${escapeHtml(item.name)}</div>
+            <div class="days-badge ${alertClass}">🗓 前回: ${item.lastDate} (${daysText})</div>
+            ${item.memo ? `<div class="memo-info">📝 ${escapeHtml(item.memo)}</div>` : ''}
+            <div class="action-btns">
+              <button class="action-btn done-btn" onclick="updateToday(${item.id})">今日掃除した</button>
+              <button class="action-btn del-btn" onclick="deleteItem(${item.id})">削除</button>
+            </div>
+          </div>
+        `;
+        itemListEl.appendChild(li);
+      });
+    }
+
+    // 画像ファイルを自動縮小してBase64に変換し保存する処理
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('photo');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert('場所の写真を添付してください');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 300;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 圧縮された画像のBase64データ取得
+          const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+          const newPlace = {
+            id: Date.now(),
+            area: document.getElementById('area').value,
+            name: document.getElementById('placeName').value,
+            photo: resizedBase64,
+            lastDate: document.getElementById('lastDate').value,
+            memo: document.getElementById('memo').value
+          };
+
+          places.push(newPlace);
+          try {
+            localStorage.setItem('my_cleaning_places', JSON.stringify(places));
+          } catch (err) {
+            alert('保存容量がいっぱいです。不要なデータを削除してください。');
+            places.pop();
+            return;
+          }
+
+          // フォームリセット
+          document.getElementById('placeName').value = '';
+          document.getElementById('photo').value = '';
+          document.getElementById('memo').value = '';
+          document.getElementById('lastDate').value = getTodayString();
+
+          render();
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // 今日掃除した日に更新
+    window.updateToday = function(id) {
+      const todayStr = getTodayString();
+      places = places.map(item => item.id === id ? { ...item, lastDate: todayStr } : item);
+      localStorage.setItem('my_cleaning_places', JSON.stringify(places));
+      render();
+    };
+
+    // 削除
+    window.deleteItem = function(id) {
+      if (confirm('この場所を削除しますか？')) {
+        places = places.filter(item => item.id !== id);
+        localStorage.setItem('my_cleaning_places', JSON.stringify(places));
+        render();
+      }
+    };
+
+    // フィルター＆並べ替え処理
+    filterAreaEl.addEventListener('change', render);
+
+    sortBtn.addEventListener('click', () => {
+      isSortByDays = !isSortByDays;
+      if (isSortByDays) {
+        sortBtn.classList.add('active');
+        sortBtn.textContent = '放置順（解除）';
+      } else {
+        sortBtn.classList.remove('active');
+        sortBtn.textContent = '放置順に並べ替え';
+      }
+      render();
+    });
+
+    render();
+  </script>
+<!-- 関連ツールリンクエリア --><div style="margin-top: 30px; padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
+  <h3 style="font-size: 16px; margin-bottom: 10px;">便利な関連ツール</h3>
+  <ul style="list-style: none; padding-left: 0; line-height: 1.8;">
+    <li>👉 <a href="https://konetu.pages.dev/">光熱費管理</a></li>
+    <li>👉 <a href="https://shoumikigen.pages.dev/">賞味期限管理</a></li>
+    <li>👉 <a href="https://kaimono-4nt.pages.dev/">買い物リスト</a></li>
+    <li>👉 <a href="https://poinnto.pages.dev/">ポイ活管理</a></li>
+    <li>👉 <a href="https://running-29c.pages.dev/">ランニング記録</a></li>
+  </ul></div>
+</body>
+</html>
